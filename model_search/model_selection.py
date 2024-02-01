@@ -1,7 +1,10 @@
-from .model_evaluation import ModelEvaluation
+import shutil
 from pathlib import Path
+
 import yaml
 from tqdm import tqdm
+
+from .model_evaluation import ModelEvaluation
 
 
 def generic_unknown_tag_handler(loader, tag_suffix, node):
@@ -68,11 +71,37 @@ class ModelSelection(ModelEvaluation):
                     "log_dir": log_dir,
                     "log_dir_relative": log_dir.relative_to(self.start_path),
                     "metrics": best_model_dict,
-                    "hparams": hparams["hparams"] if "hparams" in hparams else hparams,
+                    "hparams": hparams["hparams"]
+                    if "hparams" in hparams
+                    else hparams,
                 }
             )
 
         return best_models
+
+    def remove_unused_checkpoints(self, no_confirm=False):
+        """Removes the checkpoints of all models other than the best model.
+        Might be useful to save space."""
+        for model_data in self.best_models:
+            if not no_confirm:
+                confirm = input(
+                    f"Are you sure you want to remove all checkpoints of .../{model_data['log_dir_relative']} except the best model? [y/n] "  # noqa
+                )
+                if confirm != "y":
+                    continue
+
+            log_dir = model_data["log_dir"]
+            version_dirs = self._get_version_dirs(log_dir)
+
+            # remove best model from list
+            version_dirs.remove(log_dir / model_data["metrics"]["version"])
+            version_dirs.sort()
+            for version_dir in version_dirs:
+                checkpoints = version_dir.glob("*checkpoint*")
+                for checkpoint in checkpoints:
+                    if checkpoint.is_dir():
+                        print(f"Removing {checkpoint} ...")
+                        shutil.rmtree(checkpoint)
 
     def link_best_models(self):
         pbar = tqdm(self.best_models)

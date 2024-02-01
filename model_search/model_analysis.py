@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 import tensorflow as tf
+import tensorflow
 from tqdm import tqdm
 
 from .model_search_base import ModelSearchBase
@@ -33,12 +34,15 @@ class ModelAnalysis(ModelSearchBase):
     ):
         df = pd.DataFrame()
 
-        # Iterate through the records in one event file
-        for e in tf.compat.v1.train.summary_iterator(event_file_path):
-            for v in e.summary.value:
-                if v.HasField("simple_value"):
-                    if split in v.tag and exclude not in v.tag:
-                        df.loc[e.step, v.tag] = v.simple_value
+        try:
+            # Iterate through the records in one event file
+            for e in tf.compat.v1.train.summary_iterator(event_file_path):
+                for v in e.summary.value:
+                    if v.HasField("simple_value"):
+                        if split in v.tag and exclude not in v.tag:
+                            df.loc[e.step, v.tag] = v.simple_value
+        except Exception as e:
+            print(f"{e}: {event_file_path}. Skipping file.")
 
         return df
 

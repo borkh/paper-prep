@@ -1,0 +1,29 @@
+metric_names:
+  test_loss_epoch: Test Loss
+  test_loss: Test Loss
+  test_accuracy_epoch: Test Accuracy
+  test_accuracy: Test Accuracy
+  test_topk_accuracy: Test Accuracy (Top-20)
+  test_top_k_accuracy: Test Accuracy (Top-20)
+  test_perplexity: Test Perplexity
+
+hparam_names:
+  learning_rate: Lerning Rate
+  batch_size: Batch Size
+  chunk_len: Chunk Length
+  stride: Stride
+  n_layers: Number of Layers
+  num_layers: Number of Layers
+  hidden_size: Hidden Size
+  weigth_decay: Weight Decay
+  warmup_steps: Warmup Steps
+  dropout: Dropout
+  dropout_rate: Dropout Rate
+  num_epochs: Number of Epochs
+  num_steps: Number of Steps
+
+priority_min: {}
+
+priority_max: {}
+
+custom_metrics: {}

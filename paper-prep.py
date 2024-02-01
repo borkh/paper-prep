@@ -1,10 +1,12 @@
 import shutil
 from pathlib import Path
+import argparse
+import yaml
 
 from tqdm import tqdm
 
-from model_search import ModelPlotter
 from latex import LatexTemplate
+from model_search import ModelPlotter
 from optuna_plotting import OptunaPlotter
 
 
@@ -161,39 +163,74 @@ class PaperPrep(ModelPlotter, LatexTemplate, OptunaPlotter):
 
 if __name__ == "__main__":
     """Example usage. Replace artifacts_dir with your own directory."""
+    with open("config.yaml", "r") as f:
+        config = yaml.safe_load(f)
+    metric_names = config["metric_names"]
+    hparam_names = config["hparam_names"]
+    priority_min = config["priority_min"]
+    priority_max = config["priority_max"]
+    custom_metrics = config["custom_metrics"]
 
-    artifacts_dir = "/path/to/tensorboard-model-logdir"
-    #    custom_metrics = {"test/loss": "min"}
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--logdir",
+        type=str,
+        required=True,
+        help="Path to directory containing the tensorboard logs.",
+    )
+    parser.add_argument(
+        "--split",
+        type=str,
+        default="test",
+        help="Split to use for evaluation. E.g. 'test' or 'val'.",
+    )
+    parser.add_argument(
+        "--language",
+        type=str,
+        default="english",
+        help="Language of the paper. E.g. 'english' or 'german'.",
+    )
+    parser.add_argument(
+        "--significant_digits",
+        type=int,
+        default=4,
+        help="Number of significant digits to use in the paper.",
+    )
+    parser.add_argument(
+        "--include_unspecified",
+        action="store_true",
+        help="Whether to include hyperparameters that were not specified in the hparam_names dict.",  # noqa
+    )
+    parser.add_argument(
+        "--remove_unused_checkpoints",
+        action="store_false",
+        help="Whether to remove unused checkpoints.",
+    )
+    # add argument for "no confirm" linked to remove_unused_checkpoints
+    parser.add_argument(
+        "--no_confirm",
+        action="store_true",
+        help="Whether to remove unused checkpoints without confirmation.",
+    )
+
+    args = parser.parse_args()
 
     pp = PaperPrep(
-        artifacts_dir,
-        split="test",
-        # custom_metrics=custom_metrics,
-        language="english",
-        significant_digits=4,
+        Path(args.logdir).resolve(),
+        split=args.split,
+        custom_metrics=custom_metrics,
+        language=args.language,
+        significant_digits=args.significant_digits,
     )
-    metric_names = {
-        "test_loss_epoch": "Testfehler",
-        "test_accuracy_epoch": "Testgenauigkeit",
-        "test_loss": "Testfehler",
-        "test_accuracy": "Testgenauigkeit",
-        "test_perplexity": "Testperplexität",
-        "test_topk_accuracy": "Testgenauigkeit (Top-20)",
-    }
-    hparam_names = {
-        "learning_rate": "Lernrate",
-        "batch_size": "Batchgröße",
-        "chunk_len": "Chunklänge",
-        "stride": "Stride",
-        "n_layers": "Anzahl Layer",
-        "hidden_size": "Dim. verborgene Schicht",
-        "fasttext_model_path": "fastText-Modell",
-    }
 
     pp.generate_optuna_plots(hparam_names=hparam_names)
+
     pp.generate_dir()
     pp.generate_latex(
         metric_names=metric_names,
         hparams_names=hparam_names,
-        include_unspecified=False,
+        include_unspecified=args.include_unspecified,
     )
+
+    if args.remove_unused_checkpoints:
+        pp.remove_unused_checkpoints(no_confirm=args.no_confirm)

@@ -37,7 +37,8 @@ class ModelSearchBase:
     def _get_version_dirs(self, log_dir):
         """
         Returns a list of pathlib.Path objects pointing to the version
-        directories in the given log directory.
+        directories in the given log directory. The 'best_model' directory is
+        excluded.
 
         :param log_dir: The directory path to search for version directories
         :return: A list of pathlib.Path objects pointing to the version
